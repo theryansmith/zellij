@@ -1,0 +1,63 @@
+name: windows-build
+
+# Builds a native Windows zellij.exe from this fork's patched branch and publishes
+# it. The upstream project does not ship a Windows binary in its GitHub releases, so
+# this fork carries chosen patches (e.g. the session-rename named-pipe fix, PR #5006)
+# on top of a release tag and produces an installable exe here.
+#
+# Triggers:
+#   - push of a tag matching win-*  -> builds AND attaches zellij.exe to a GitHub
+#     Release for that tag (so .../releases/latest/download/zellij.exe resolves).
+#   - manual (workflow_dispatch)    -> builds and uploads a workflow artifact only.
+#
+# Mirrors the toolchain setup of upstream's own Windows CI (rust.yml / release.yml):
+# pinned toolchain from rust-toolchain.toml + the wasm plugin target, protoc for the
+# plugin protobufs, and NASM for the crypto crates. --no-web skips the browser-share
+# web server (and its TLS stack) we don't use, which also avoids its Windows build deps.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "win-*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          # Channel comes from rust-toolchain.toml; add the host + wasm plugin targets.
+          target: x86_64-pc-windows-msvc,wasm32-wasip1
+          cache: false
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install NASM
+        uses: ilammy/setup-nasm@v1
+
+      - name: Build release (no web server)
+        run: cargo xtask ci build-release --no-web
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zellij-windows
+          path: target/release/zellij.exe
+          if-no-files-found: error
+
+      - name: Publish release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/release/zellij.exe
+          fail_on_unmatched_files: true
