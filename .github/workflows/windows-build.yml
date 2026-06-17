@@ -35,6 +35,10 @@ jobs:
         with:
           # Channel comes from rust-toolchain.toml; add the host + wasm plugin targets.
           target: x86_64-pc-windows-msvc,wasm32-wasip1
+          # This action defaults RUSTFLAGS to "-D warnings"; clear it (as upstream's
+          # own CI does) so benign warnings aren't fatal. --no-web in particular leaves
+          # the tokio async runtime unused -> dead_code -> would be denied otherwise.
+          rustflags: ""
           cache: false
 
       - name: Install protoc
