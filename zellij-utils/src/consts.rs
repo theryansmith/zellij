@@ -11,6 +11,15 @@ pub const ZELLIJ_CONFIG_FILE_ENV: &str = "ZELLIJ_CONFIG_FILE";
 pub const ZELLIJ_CONFIG_DIR_ENV: &str = "ZELLIJ_CONFIG_DIR";
 pub const ZELLIJ_LAYOUT_DIR_ENV: &str = "ZELLIJ_LAYOUT_DIR";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+// What `--version` prints. Kept separate from VERSION (which gates session, web-server
+// and terminal-XTVERSION compatibility and must stay the plain upstream value, or this
+// patched binary would treat stock-built sessions as a different version). Our CI sets
+// ZELLIJ_CLI_VERSION to the build tag so the patched build is self-identifying; local
+// builds fall back to the crate version.
+pub const CLI_VERSION: &str = match option_env!("ZELLIJ_CLI_VERSION") {
+    Some(v) => v,
+    None => env!("CARGO_PKG_VERSION"),
+};
 pub const DEFAULT_SCROLL_BUFFER_SIZE: usize = 10_000;
 pub static SCROLL_BUFFER_SIZE: OnceLock<usize> = OnceLock::new();
 pub static DEBUG_MODE: OnceLock<bool> = OnceLock::new();

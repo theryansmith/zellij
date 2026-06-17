@@ -27,6 +27,11 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    # Stamp `--version` with the build ref (tag for win-* builds, branch for manual
+    # runs) so the patched binary is self-identifying. consts::CLI_VERSION reads this;
+    # it does NOT affect the internal VERSION used for session/version compatibility.
+    env:
+      ZELLIJ_CLI_VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
